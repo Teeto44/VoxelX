@@ -1,0 +1,10 @@
+I do not own, nor have I contributed, modified, or In anyway created something 
+new with this library. This is a statically built combination of three libraries
+(rLImgui, cimgui, and imgui). All credit goes to its creators and all three of 
+their licenses have been included in the "license(s)" folder. I have the github
+repositories below if you would like to see them for yourself or support the
+creators.
+
+https://github.com/raylib-extras/rlImGui
+https://github.com/cimgui/cimgui
+https://github.com/ocornut/imgui
