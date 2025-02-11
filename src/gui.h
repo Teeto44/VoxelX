@@ -23,10 +23,17 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#pragma once
+#ifndef GUI_H
+#define GUI_H
 
-void InitGUI();
-void DrawDebugGUI();
-void EndGUI();
+#include <stdbool.h>
+
+void InitGui();
+void DrawDebugGui();
+void EndGui();
 
 void ToggleCursor();
+
+bool GetDrawWireFrame();
+
+#endif // GUI_H

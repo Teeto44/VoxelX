@@ -28,72 +28,77 @@
 #include "settings.h"
 #include "player.h"
 #include "gui.h"
+#include "world.h"
+
+// Function prototypes
+static void Draw();
+static void Draw3D();
+static void Draw2D();
 
 // Initialize the engine
 void Initialize()
 {
-	// Intialize window
-	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
-	SetWindowState(FLAG_WINDOW_RESIZABLE);
-	SetTargetFPS(TARGET_FPS);
-	DisableCursor();	
+  // Initialize window
+  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
+  SetWindowState(FLAG_WINDOW_RESIZABLE);
+  SetTargetFPS(TARGET_FPS);
+  DisableCursor();
 
-	InitGUI();
-	InitPlayer();	
+  InitGui();
+  InitPlayer();
 }
 
 void Update()
 {
-	// Update world
-	UpdatePlayer(GetFrameTime());
+  // Update world
+  UpdatePlayer(GetFrameTime());
 
-	// Todo - Move this to an actual input handler file
-	if (IsKeyPressed(KEY_F)) ToggleCursor();
+  // Todo - Move this to an actual input handler file
+  if (IsKeyPressed(KEY_F)) ToggleCursor();
 
-	Draw();
-}
-
-// Draw the frame
-void Draw()
-{
-	// Begin drawing
-	BeginDrawing();
-	ClearBackground(BLACK);
-
-	Draw3D();
-	Draw2D();
-	
-	// End drawing
-	EndDrawing();
-}
-
-// Draw 3D elements
-void Draw3D()
-{
-	// Begins drawing 3D from player camera
-	BeginMode3D(GetPlayerCamera());
-
-	// Temporary debug grid
-	DrawGrid(10, 1.0f);
-
-	// End of drawing 3D
-	EndMode3D();
-}
-
-// Draw 2D elements
-void Draw2D()
-{
-	// Temporary debug GUI
-	DrawDebugGUI();
+  Draw();
 }
 
 // Deconstruct the engine
 void Deconstruct()
 {
-	// Cleaning up GUI
-	EndGUI();
+  // Cleaning up GUI
+  EndGui();
 
-	// Cleaning up window
-	CloseWindow();
+  // Cleaning up window
+  CloseWindow();
 }
 
+// Draw the frame
+static void Draw()
+{
+  // Begin drawing
+  BeginDrawing();
+  ClearBackground(BLACK);
+
+  Draw3D();
+  Draw2D();
+
+  // End drawing
+  EndDrawing();
+}
+
+// Draw 3D elements
+static void Draw3D()
+{
+  // Begins drawing 3D from player camera
+  BeginMode3D(GetPlayerCamera());
+
+  LoadChunksInRenderDistance();
+  DrawChunks();
+
+  // End of drawing 3D
+  EndMode3D();
+}
+
+// Draw 2D elements
+static void Draw2D()
+{
+  // Temporary debug GUI
+  DrawDebugGui();
+}

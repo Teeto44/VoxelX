@@ -37,59 +37,61 @@ Camera3D playerCamera;
 Camera3D GetPlayerCamera() { return playerCamera; }
 Vector3 GetPlayerPosition() { return position; }
 
+// Function prototypes
+static Vector3 GetMovement(float deltaTime);
+static Vector3 GetMouseMovement(float deltaTime);
+
 void InitPlayer()
 {
-	// Initialize player variables
-	position = (Vector3){ -3.0f, 2.0f, 0.0f };
-	playerSpeed = PLAYER_SPEEED;
+  // Initialize player variables
+  position = (Vector3){-3.0f, 40.0f, 0.0f};
+  playerSpeed = PLAYER_SPEEED;
 
-	// Initialize camera variables
-	playerCamera.position = position;
-	playerCamera.target = (Vector3){ position.x + 1.0f, position.y, position.z };
-	playerCamera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
-	playerCamera.fovy = PLAYER_FOV;
-	playerCamera.projection = CAMERA_PERSPECTIVE;
+  // Initialize camera variables
+  playerCamera.position = position;
+  playerCamera.target = (Vector3){position.x + 1.0f, position.y, position.z};
+  playerCamera.up = (Vector3){0.0f, 1.0f, 0.0f};
+  playerCamera.fovy = PLAYER_FOV;
+  playerCamera.projection = CAMERA_PERSPECTIVE;
 }
 
-void UpdatePlayer(float deltaTime)
+void UpdatePlayer(const float deltaTime)
 {
-	Vector3 movement = GetMovement(deltaTime);
-  Vector3 deltaRotation = GetMouseMovement(deltaTime);
+  const Vector3 movement = GetMovement(deltaTime);
+  const Vector3 deltaRotation = GetMouseMovement(deltaTime);
 
-	// Rework movement for raylib's camera update function
-	Vector3 reworkedMovement = (Vector3) { movement.x, movement.z, movement.y };
+  // Rework movement for raylib's camera update function
+  const Vector3 reworkedMovement = (Vector3)
+    {movement.x, movement.z, movement.y};
 
-	UpdateCameraPro(&playerCamera, reworkedMovement, deltaRotation, 0.0f);
+  UpdateCameraPro(&playerCamera, reworkedMovement, deltaRotation, 0.0f);
 
-	position = playerCamera.position;
+  position = playerCamera.position;
 }
 
 // Get change in movement since last frame
-Vector3 GetMovement(float deltaTime)
+static Vector3 GetMovement(const float deltaTime)
 {
-	// Adjusts movement based on time between frames
-	float movementMagnitude = playerSpeed * deltaTime;
+  // Adjusts movement based on time between frames
+  const float movementMagnitude = (float)playerSpeed * deltaTime;
 
-	return (Vector3)
-	{
-		(IsKeyDown(PLAYER_FORWARD) - IsKeyDown(PLAYER_BACK)) * movementMagnitude, 
-		(IsKeyDown(PLAYER_UP) - IsKeyDown(PLAYER_DOWN)) * movementMagnitude,
-    (IsKeyDown(PLAYER_RIGHT) - IsKeyDown(PLAYER_LEFT)) * movementMagnitude  
-	};
+  return (Vector3){
+    (float)(IsKeyDown(PLAYER_FORWARD) - IsKeyDown(PLAYER_BACK)) *
+    movementMagnitude,
+    (float)(IsKeyDown(PLAYER_UP) - IsKeyDown(PLAYER_DOWN)) * movementMagnitude,
+    (float)(IsKeyDown(PLAYER_RIGHT) - IsKeyDown(PLAYER_LEFT)) *
+    movementMagnitude};
 }
 
 // Get change in rotation since last frame
-Vector3 GetMouseMovement(float deltaTime)
+static Vector3 GetMouseMovement(const float deltaTime)
 {
-	// Dont rotate if cursor isnt active
-	if (!IsCursorHidden()) { return Vector3Zero(); };
+  // Don't rotate if cursor isn't active
+  if (!IsCursorHidden()) { return Vector3Zero(); }
 
-	Vector2 mouseMovement = GetMouseDelta();
+  const Vector2 mouseMovement = GetMouseDelta();
 
-	return (Vector3)
-	{
-		mouseMovement.x * MOUSE_SENSITIVITY * deltaTime,
-		mouseMovement.y * MOUSE_SENSITIVITY * deltaTime,
-		0
-	};
+  return (Vector3){mouseMovement.x * MOUSE_SENSITIVITY * deltaTime,
+                   mouseMovement.y * MOUSE_SENSITIVITY * deltaTime,
+                   0};
 }

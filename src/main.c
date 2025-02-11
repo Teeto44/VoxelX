@@ -28,14 +28,11 @@
 
 int main(void)
 {
-    Initialize();
+  Initialize();
 
-	while (!WindowShouldClose())
-    {
-        Update();
-    }
+  while (!WindowShouldClose()) { Update(); }
 
-	Deconstruct();
+  Deconstruct();
 
-    return 0;
+  return 0;
 }

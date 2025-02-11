@@ -23,15 +23,16 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#pragma once
+#ifndef PLAYER_H
+#define PLAYER_H
+
 #include "raylib.h"
 
 void InitPlayer();
 void UpdatePlayer(float deltaTime);
 
-Vector3 GetMovement(float deltaTime);
-Vector3 GetMouseMovement(float deltaTime);
-
 // Variable fetching
 Camera3D GetPlayerCamera();
 Vector3 GetPlayerPosition();
+
+#endif // PLAYER_H

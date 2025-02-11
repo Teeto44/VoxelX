@@ -10,12 +10,13 @@ The project uses CMake, which should make it easy to build on any platform. Howe
 
 All dependencies are either included in the project or will be downloaded when it builds.
 
-Here are all of the libraries used:
+Here are all the libraries used:
 
 - [raylib](https://github.com/raysan5/raylib)
 - [rlImGui](https://github.com/raylib-extras/rlImGui)
 - [cimgui](https://github.com/cimgui/cimgui)
 - [imgui](https://github.com/ocornut/imgui)
+- [tinycthread](https://github.com/tinycthread/tinycthread)
 
 ## License
 

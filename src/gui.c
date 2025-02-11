@@ -26,54 +26,66 @@
 #define  CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 
 #include "gui.h"
+
+#include <corecrt_math.h>
+
 #include "rlImGui.h"
 #include "cimgui.h"
 #include "raylib.h"
 #include "settings.h"
 #include "player.h"
+#include "world.h"
 
-void InitGUI()
+bool drawWireFrame = false;
+
+// Variable Fetching
+bool GetDrawWireFrame() { return drawWireFrame; }
+
+void InitGui()
 {
-	// Setup ImGui
-	rlImGuiSetup(true);
+  // Setup ImGui
+  rlImGuiSetup(true);
 
-	// Configure ImGui to not handle the cursor, and not to save any gui settings
-	ImGuiIO* io = igGetIO();
-	io->ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-	io->IniFilename = NULL;
+  // Configure ImGui to not handle the cursor, and not to save any gui settings
+  ImGuiIO* io = igGetIO();
+  io->ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+  io->IniFilename = NULL;
 }
 
-void DrawDebugGUI()
+void DrawDebugGui()
 {
-	rlImGuiBegin();
+  rlImGuiBegin();
 
-	igSeparatorText("Window Stats");
-	igText("FPS %f", 1/GetFrameTime());
-	igText("Target FPS %d", TARGET_FPS);
-	igText("Window Size %d, %d", GetScreenWidth(), GetScreenHeight());
+  igSeparatorText("Window Stats");
+  igText("FPS %f", 1 / GetFrameTime());
+  igText("Target FPS %d", TARGET_FPS);
+  igText("Window Size %d, %d", GetScreenWidth(), GetScreenHeight());
 
-	igSeparatorText("Game Stats");
+  igSeparatorText("Game Stats");
 
-	Vector3 playerPosition = GetPlayerPosition();
-	igText("Player Position %f, %f, %f",
-		playerPosition.x,
-		playerPosition.y,
-		playerPosition.z);
+  const Vector3 playerPosition = GetPlayerPosition();
+  igText("Player Position %f, %f, %f", playerPosition.x, playerPosition.y,
+         playerPosition.z);
 
-	rlImGuiEnd();
+  // Determine which chunk the player is in
+  const int playerChunkX = (int)floorf(GetPlayerPosition().x / CHUNK_SIZE);
+  const int playerChunkZ = (int)floorf(GetPlayerPosition().z / CHUNK_SIZE);
+  igText("Player Chunk Position %d, %d, %d", playerChunkX, 0, playerChunkZ);
+
+  igSeparatorText("Debug Options");
+  igCheckbox("Wireframe", &drawWireFrame);
+
+  if (igButton("Regenerate Chunks", (ImVec2){150, 20})) { DestroyWorld(); }
+
+  rlImGuiEnd();
 }
 
 // De-initialization
-void EndGUI()
-{
-	rlImGuiShutdown();
-}
+void EndGui() { rlImGuiShutdown(); }
 
 // Toggle the cursor visibility
 void ToggleCursor()
 {
-  if (IsCursorHidden())
-    EnableCursor();
-  else
-    DisableCursor();
+  if (IsCursorHidden()) EnableCursor();
+  else DisableCursor();
 }

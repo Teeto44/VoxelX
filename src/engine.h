@@ -23,13 +23,11 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#pragma once
+#ifndef ENGINE_H
+#define ENGINE_H
 
 void Initialize();
 void Update();
-
-void Draw();
-void Draw3D();
-void Draw2D();
-
 void Deconstruct();
+
+#endif // ENGINE_H

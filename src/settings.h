@@ -23,7 +23,8 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#pragma once
+#ifndef SETTINGS_H
+#define SETTINGS_H
 
 // Window settings
 #define SCREEN_WIDTH (1920)
@@ -32,7 +33,7 @@
 #define WINDOW_TITLE "VoxelX - In Development"
 
 // Player settings
-#define PLAYER_SPEEED (5)
+#define PLAYER_SPEEED (25)
 #define MOUSE_SENSITIVITY (50)
 #define PLAYER_FOV (90)
 
@@ -43,3 +44,9 @@
 #define PLAYER_RIGHT (KEY_D)
 #define PLAYER_UP (KEY_SPACE)
 #define PLAYER_DOWN (KEY_LEFT_SHIFT)
+
+// World settings
+#define RENDER_DISTANCE (10)
+#define CHUNK_SIZE (16)
+
+#endif // SETTINGS_H
