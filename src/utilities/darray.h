@@ -31,9 +31,9 @@
 #define DARRAY_H
 #undef size
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #define DARRAY_INITIAL_CAPACITY 16
 #define DARRAY_GROWTH_FACTOR 2

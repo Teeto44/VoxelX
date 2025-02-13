@@ -40,6 +40,9 @@ set(TINYCTHREAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/include")
 # Use file(GLOB_RECURSE ...) to get all .c, .cpp, .h, and .hpp files in the src directory
 file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp")
 file(GLOB_RECURSE HEADERS "${SRC_DIR}/*.h" "${SRC_DIR}/*.hpp")
+file(GLOB_RECURSE INCLUDE_DIRS "${SRC_DIR}/*")
+
+
 
 # Debugging: Print the list of source files
 message(STATUS "Source files: ${SOURCES}")
@@ -49,11 +52,13 @@ message(STATUS "Header files: ${HEADERS}")
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${TINYCTHREAD_SOURCE_DIR})
 
 # Link libraries
+include_directories(${SRC_DIR} ${INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${CRLIMGUI_LIB})
-target_include_directories(${PROJECT_NAME} PRIVATE ${HEADERS}
-													 ${CRLIMGUI_INCLUDE_DIR}
+target_include_directories(${PROJECT_NAME} PRIVATE ${CRLIMGUI_INCLUDE_DIR}
 													 ${TINYCTHREAD_INCLUDE_DIR})
+
+include_directories(${SRC_DIR}/player ${SRC_DIR}/world ${SRC_DIR}/utilities ${SRC_DIR}/engine)
 
 # Setting ASSETS_PATH
 target_compile_definitions(${PROJECT_NAME} PUBLIC RES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/res/")

@@ -23,17 +23,17 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#define  CIMGUI_DEFINE_ENUMS_AND_STRUCTS
+#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 
 #include "gui.h"
 
 #include <corecrt_math.h>
 
-#include "rlImGui.h"
 #include "cimgui.h"
-#include "raylib.h"
-#include "settings.h"
 #include "player.h"
+#include "raylib.h"
+#include "rlImGui.h"
+#include "settings.h"
 #include "world.h"
 
 bool drawWireFrame = false;
@@ -86,6 +86,8 @@ void EndGui() { rlImGuiShutdown(); }
 // Toggle the cursor visibility
 void ToggleCursor()
 {
-  if (IsCursorHidden()) EnableCursor();
-  else DisableCursor();
+  if (IsCursorHidden())
+    EnableCursor();
+  else
+    DisableCursor();
 }

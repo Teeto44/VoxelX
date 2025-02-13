@@ -24,10 +24,10 @@
 *******************************************************************************/
 
 #include "engine.h"
+#include "gui.h"
+#include "player.h"
 #include "raylib.h"
 #include "settings.h"
-#include "player.h"
-#include "gui.h"
 #include "world.h"
 
 // Function prototypes

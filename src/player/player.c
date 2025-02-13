@@ -24,8 +24,8 @@
 *******************************************************************************/
 
 #include "player.h"
-#include "settings.h"
 #include "raymath.h"
+#include "settings.h"
 
 Vector3 position;
 int playerSpeed;
@@ -61,8 +61,8 @@ void UpdatePlayer(const float deltaTime)
   const Vector3 deltaRotation = GetMouseMovement(deltaTime);
 
   // Rework movement for raylib's camera update function
-  const Vector3 reworkedMovement = (Vector3)
-    {movement.x, movement.z, movement.y};
+  const Vector3 reworkedMovement =
+    (Vector3){movement.x, movement.z, movement.y};
 
   UpdateCameraPro(&playerCamera, reworkedMovement, deltaRotation, 0.0f);
 
@@ -75,12 +75,12 @@ static Vector3 GetMovement(const float deltaTime)
   // Adjusts movement based on time between frames
   const float movementMagnitude = (float)playerSpeed * deltaTime;
 
-  return (Vector3){
-    (float)(IsKeyDown(PLAYER_FORWARD) - IsKeyDown(PLAYER_BACK)) *
-    movementMagnitude,
-    (float)(IsKeyDown(PLAYER_UP) - IsKeyDown(PLAYER_DOWN)) * movementMagnitude,
-    (float)(IsKeyDown(PLAYER_RIGHT) - IsKeyDown(PLAYER_LEFT)) *
-    movementMagnitude};
+  return (Vector3){(float)(IsKeyDown(PLAYER_FORWARD) - IsKeyDown(PLAYER_BACK)) *
+                     movementMagnitude,
+                   (float)(IsKeyDown(PLAYER_UP) - IsKeyDown(PLAYER_DOWN)) *
+                     movementMagnitude,
+                   (float)(IsKeyDown(PLAYER_RIGHT) - IsKeyDown(PLAYER_LEFT)) *
+                     movementMagnitude};
 }
 
 // Get change in rotation since last frame
@@ -92,6 +92,5 @@ static Vector3 GetMouseMovement(const float deltaTime)
   const Vector2 mouseMovement = GetMouseDelta();
 
   return (Vector3){mouseMovement.x * MOUSE_SENSITIVITY * deltaTime,
-                   mouseMovement.y * MOUSE_SENSITIVITY * deltaTime,
-                   0};
+                   mouseMovement.y * MOUSE_SENSITIVITY * deltaTime, 0};
 }

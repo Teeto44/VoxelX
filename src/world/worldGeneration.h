@@ -23,77 +23,11 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#ifndef DATA_TYPES_H
-#define DATA_TYPES_H
+#ifndef WORLD_GENERATION_H
+#define WORLD_GENERATION_H
 
-#include "raylib.h"
-#include <stdint.h>
+#include "dataTypes.h"
 
-#include "settings.h"
+void GenerateChunk(Chunk* chunk);
 
-#define uint uint32_t
-#define ushort uint16_t
-
-// Essential datatypes
-typedef struct Vector3I
-{
-  int x;
-  int y;
-  int z;
-} Vector3I;
-
-typedef enum VoxelType
-{
-  AIR,
-  DIRT,
-  GRASS,
-  STONE,
-} VoxelType;
-
-typedef enum Face
-{
-  TOP,
-  BOTTOM,
-  LEFT,
-  RIGHT,
-  FRONT,
-  BACK,
-} Face;
-
-typedef struct Voxel
-{
-  VoxelType type;
-} Voxel;
-
-typedef struct Chunk
-{
-  Vector3I position;
-  Voxel voxels[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
-  Mesh* mesh;
-  Model model;
-} Chunk;
-
-// Smaller ways to refer to the hashing functions
-#define MHVI MapHashVector3I
-#define MCV3 MapCompareVector3I
-
-static size_t MapHashVector3I(const void* key)
-{
-  const Vector3I* vec = key;
-
-  // Simple but effective hash combining x,y,z
-  size_t hash = 5381;
-  hash = (hash << 5) + hash + vec->x;
-  hash = (hash << 5) + hash + vec->y;
-  hash = (hash << 5) + hash + vec->z;
-  return hash;
-}
-
-static bool MapCompareVector3I(const void* key1, const void* key2)
-{
-  const Vector3I* vec1 = key1;
-  const Vector3I* vec2 = key2;
-  return vec1->x == vec2->x && vec1->y == vec2->y && vec1->z == vec2->z;
-}
-
-#endif // DATA_TYPES_H
+#endif // WORLD_GENERATION_H

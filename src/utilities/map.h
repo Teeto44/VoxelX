@@ -30,10 +30,10 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define MAP_INITIAL_CAPACITY 16
 #define MAP_LOAD_FACTOR_THRESHOLD 0.85
@@ -313,7 +313,10 @@ static size_t MapHashString(const void* key)
   const char* str = *(const char**)key;
   size_t hash = 5381;
   int c;
-  while ((c = *str++)) { hash = (hash << 5) + hash + c; }
+  while ((c = *str++))
+  {
+    hash = (hash << 5) + hash + c;
+  }
   return hash;
 }
 

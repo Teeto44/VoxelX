@@ -25,16 +25,19 @@
 
 #include "world.h"
 #include <math.h>
-#include "chunkMeshGeneration.h"
-#include "settings.h"
-#include "gui.h"
 #include <stdlib.h>
 #include "chunkMap.h"
+#include "chunkMeshGeneration.h"
+#include "gui.h"
 #include "player.h"
+#include "settings.h"
+#include "worldGeneration.h"
 
 // Function prototypes
 static void DrawChunk(const Chunk* chunk);
-static void GenerateChunk(Chunk* chunk);
+static void UpdateNeighboringChunkMeshes(int chunkX, int chunkZ);
+
+Map* loadedChunks = NULL;
 
 // Completely destroys the currently loaded chunks
 void DestroyWorld() { ClearChunkMap(); }
@@ -47,29 +50,14 @@ Chunk* CreateChunk(const int chunkX, const int chunkZ)
   chunk->position.y = 0;
   chunk->position.z = chunkZ;
   chunk->mesh = NULL;
+  chunk->needsMeshing = true;
 
   GenerateChunk(chunk);
-  GenerateChunkMesh(chunk);
 
-  chunk->model = LoadModelFromMesh(*chunk->mesh);
+  // Update neighboring chunk meshes
+  UpdateNeighboringChunkMeshes(chunkX, chunkZ);
 
   return chunk;
-}
-
-// For now this simply fills the chunk with dirt, eventually this function
-// will be responsible for generating the random chunk
-static void GenerateChunk(Chunk* chunk)
-{
-  for (int x = 0; x < CHUNK_SIZE; x++)
-  {
-    for (int y = 0; y < CHUNK_SIZE; y++)
-    {
-      for (int z = 0; z < CHUNK_SIZE; z++)
-      {
-        chunk->voxels[x][y][z].type = DIRT;
-      }
-    }
-  }
 }
 
 void LoadChunksInRenderDistance()
@@ -86,12 +74,11 @@ void LoadChunksInRenderDistance()
          chunkZ <= playerChunkZ + RENDER_DISTANCE; chunkZ++)
     {
       // Only load chunks within a circular distance from the player
-      const float distance = sqrtf(
-        (float)(chunkX - playerChunkX) * (float)(chunkX - playerChunkX) + (
-          float)(chunkZ - playerChunkZ) * (float)(chunkZ - playerChunkZ));
+      const float distance =
+        sqrtf((float)(chunkX - playerChunkX) * (float)(chunkX - playerChunkX) +
+              (float)(chunkZ - playerChunkZ) * (float)(chunkZ - playerChunkZ));
       if (distance <= RENDER_DISTANCE)
       {
-        // Check if the chunk is in the chunk map
         if (!GetChunkFromMap(chunkX, chunkZ))
         {
           Chunk* newChunk = CreateChunk(chunkX, chunkZ);
@@ -101,19 +88,27 @@ void LoadChunksInRenderDistance()
     }
   }
 
-  // Unload chunks outside the render distance
   MapIterator it = MapIteratorCreate(loadedChunks);
   ChunkKey key;
   Chunk* chunk;
-
   while (MapIteratorNext(&it, &key, &chunk))
   {
     const float distance = sqrtf(
       (float)(key.chunkX - playerChunkX) * (float)(key.chunkX - playerChunkX) +
       (float)(key.chunkZ - playerChunkZ) * (float)(key.chunkZ - playerChunkZ));
+
+    // Unload chunks outside the render distance
     if (distance > RENDER_DISTANCE)
     {
       RemoveChunkFromMap(key.chunkX, key.chunkZ);
+      continue;
+    }
+
+    // Re-mesh any chunks that's mesh has been updated
+    if (chunk->needsMeshing)
+    {
+      GenerateChunkMesh(chunk);
+      chunk->needsMeshing = false;
     }
   }
 }
@@ -125,7 +120,10 @@ void DrawChunks()
   ChunkKey key;
   Chunk* chunk;
 
-  while (MapIteratorNext(&it, &key, &chunk)) { DrawChunk(chunk); }
+  while (MapIteratorNext(&it, &key, &chunk))
+  {
+    DrawChunk(chunk);
+  }
 }
 
 // Draws a specific chunk
@@ -141,4 +139,17 @@ static void DrawChunk(const Chunk* chunk)
     DrawModelWires(chunk->model, chunkPosition, 1.0f, WHITE);
   }
   else { DrawModel(chunk->model, chunkPosition, 1.0f, WHITE); }
+}
+
+void UpdateNeighboringChunkMeshes(const int chunkX, const int chunkZ)
+{
+  static const int offsets[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+
+  for (int i = 0; i < 4; i++)
+  {
+    const int neighborX = chunkX + offsets[i][0];
+    const int neighborZ = chunkZ + offsets[i][1];
+    Chunk* neighborChunk = GetChunkFromMap(neighborX, neighborZ);
+    if (neighborChunk) { neighborChunk->needsMeshing = true; }
+  }
 }

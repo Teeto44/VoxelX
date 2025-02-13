@@ -30,7 +30,10 @@ int main(void)
 {
   Initialize();
 
-  while (!WindowShouldClose()) { Update(); }
+  while (!WindowShouldClose())
+  {
+    Update();
+  }
 
   Deconstruct();
 

@@ -25,8 +25,9 @@
 
 #ifndef CHUNK_MAP_H
 #define CHUNK_MAP_H
+
 #include "dataTypes.h"
-#include "utilities/map.h"
+#include "map.h"
 
 typedef struct ChunkKey
 {
@@ -39,7 +40,6 @@ static size_t ChunkKeyHash(const void* key)
   const ChunkKey* chunkKey = key;
   const size_t hashX = MapHashInt(&chunkKey->chunkX);
   const size_t hashZ = MapHashInt(&chunkKey->chunkZ);
-  // Combine the two hashes
   return hashX ^ hashZ * 31;
 }
 
@@ -51,13 +51,13 @@ static bool ChunkKeyCompare(const void* key1, const void* key2)
 }
 
 // Global map instance for storing chunks
-static Map* loadedChunks = NULL;
+extern Map* loadedChunks;
 
 // Initializes the chunk map
 static void InitializeChunkMap()
 {
-  loadedChunks = MapCreate(sizeof(ChunkKey), sizeof(Chunk*), ChunkKeyHash,
-                           ChunkKeyCompare);
+  loadedChunks =
+    MapCreate(sizeof(ChunkKey), sizeof(Chunk*), ChunkKeyHash, ChunkKeyCompare);
 }
 
 // Adds a chunk to the map
