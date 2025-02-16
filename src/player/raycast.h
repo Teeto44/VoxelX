@@ -23,18 +23,19 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#ifndef WORLD_H
-#define WORLD_H
+#ifndef RAYCAST_H
+#define RAYCAST_H
 
 #include "dataTypes.h"
 
-// Main API
-void PlaceVoxel(Vector3 position, VoxelType type);
-void BreakVoxel(Vector3 position);
-Voxel GetVoxel(Vector3 position);
+typedef struct RaycastResult
+{
+  bool hit;
+  Vector3 hitPos;
+  Voxel hitVoxel;
+  Vector3 normal;
+} RaycastResult;
 
-void LoadChunksInRenderDistance();
-void DrawChunks();
-void DestroyWorld();
+RaycastResult Raycast(Vector3 start, Vector3 direction, float distance);
 
-#endif // WORLD_H
+#endif // RAYCAST_H

@@ -23,8 +23,8 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#include "engine.h"
-#include "raylib.h"
+#include "../build/Debug/_deps/raylib-src/src/raylib.h"
+#include "engine/engine.h"
 
 int main(void)
 {

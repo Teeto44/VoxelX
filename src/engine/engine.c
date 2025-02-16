@@ -39,6 +39,7 @@ static void Draw2D();
 void Initialize()
 {
   // Initialize window
+  SetTraceLogLevel(LOG_ERROR);
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetTargetFPS(TARGET_FPS);
@@ -51,10 +52,11 @@ void Initialize()
 void Update()
 {
   // Update world
+  LoadChunksInRenderDistance();
   UpdatePlayer(GetFrameTime());
 
   // Todo - Move this to an actual input handler file
-  if (IsKeyPressed(KEY_F)) ToggleCursor();
+  if (IsKeyPressed(FREE_MOUSE)) ToggleCursor();
 
   Draw();
 }
@@ -74,7 +76,7 @@ static void Draw()
 {
   // Begin drawing
   BeginDrawing();
-  ClearBackground(BLACK);
+  ClearBackground(SKYBLUE);
 
   Draw3D();
   Draw2D();
@@ -89,7 +91,6 @@ static void Draw3D()
   // Begins drawing 3D from player camera
   BeginMode3D(GetPlayerCamera());
 
-  LoadChunksInRenderDistance();
   DrawChunks();
 
   // End of drawing 3D
@@ -99,6 +100,8 @@ static void Draw3D()
 // Draw 2D elements
 static void Draw2D()
 {
+  // Temporary crosshair
+  DrawCircle(GetScreenWidth() / 2, GetScreenHeight() / 2, 10, GRAY);
   // Temporary debug GUI
   DrawDebugGui();
 }

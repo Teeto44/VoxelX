@@ -5,6 +5,14 @@ set(RAYLIB_VERSION 5.5)
 # Define the source directory
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
+# Adding CRLImGui (rLImGui + Cimgui + Imgui) -- Please read README.txt in the external/crlimgui folder
+set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.lib")
+set(CRLIMGUI_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/crlimgui/include")
+
+set(TINYCTHREAD_SOURCE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/library")
+set(TINYCTHREAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/include")
+set(TINYCTHREAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/include")
+
 # Set C standard
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED True)
@@ -30,35 +38,35 @@ if (NOT raylib_FOUND) # If there's none, fetch and build Raylib
 		endif ()
 endif ()
 
-# Adding CRLImGui (rLImGui + Cimgui + Imgui) -- Please read README.txt in the external/crlimgui folder
-set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.lib")
-set(CRLIMGUI_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/crlimgui/include")
-
-set(TINYCTHREAD_SOURCE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/library")
-set(TINYCTHREAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/include")
+# Function to collect all subdirectories in src/
+function(collect_subdirectories BASE_DIR RESULT)
+		file(GLOB CHILDREN RELATIVE ${BASE_DIR} ${BASE_DIR}/*)
+		set(DIRS "")
+		foreach(CHILD ${CHILDREN})
+				if(IS_DIRECTORY ${BASE_DIR}/${CHILD})
+						list(APPEND DIRS ${BASE_DIR}/${CHILD})
+						collect_subdirectories(${BASE_DIR}/${CHILD} SUBDIRS)
+						list(APPEND DIRS ${SUBDIRS})
+				endif()
+		endforeach()
+		set(${RESULT} ${DIRS} PARENT_SCOPE)
+endfunction()
 
 # Use file(GLOB_RECURSE ...) to get all .c, .cpp, .h, and .hpp files in the src directory
 file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp")
 file(GLOB_RECURSE HEADERS "${SRC_DIR}/*.h" "${SRC_DIR}/*.hpp")
-file(GLOB_RECURSE INCLUDE_DIRS "${SRC_DIR}/*")
-
-
-
-# Debugging: Print the list of source files
-message(STATUS "Source files: ${SOURCES}")
-message(STATUS "Header files: ${HEADERS}")
 
 # Add the executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${TINYCTHREAD_SOURCE_DIR})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${TINYCTHREAD_SOURCE_DIR}) # Tinycthread needs to be built with the project
+
+# find all subdirectories in src/
+collect_subdirectories(${SRC_DIR} SUBDIRS)
 
 # Link libraries
-include_directories(${SRC_DIR} ${INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${CRLIMGUI_LIB})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CRLIMGUI_INCLUDE_DIR}
-													 ${TINYCTHREAD_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib ${CRLIMGUI_LIB})
 
-include_directories(${SRC_DIR}/player ${SRC_DIR}/world ${SRC_DIR}/utilities ${SRC_DIR}/engine)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CRLIMGUI_INCLUDE_DIR}
+													 ${TINYCTHREAD_INCLUDE_DIR} ${SRC_DIR} ${SUBDIRS})
 
 # Setting ASSETS_PATH
 target_compile_definitions(${PROJECT_NAME} PUBLIC RES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/res/")

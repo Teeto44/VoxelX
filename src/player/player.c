@@ -24,8 +24,9 @@
 *******************************************************************************/
 
 #include "player.h"
-#include "raymath.h"
+#include "raycast.h"
 #include "settings.h"
+#include "world.h"
 
 Vector3 position;
 int playerSpeed;
@@ -36,6 +37,13 @@ Camera3D playerCamera;
 // Variable fetching
 Camera3D GetPlayerCamera() { return playerCamera; }
 Vector3 GetPlayerPosition() { return position; }
+Vector3I GetPlayerChunk()
+{
+  const int chunkX = (int)floorf(position.x / CHUNK_SIZE);
+  const int chunkY = (int)floorf(position.y / CHUNK_SIZE);
+  const int chunkZ = (int)floorf(position.z / CHUNK_SIZE);
+  return (Vector3I){chunkX, chunkY, chunkZ};
+}
 
 // Function prototypes
 static Vector3 GetMovement(float deltaTime);
@@ -89,6 +97,18 @@ static Vector3 GetMouseMovement(const float deltaTime)
   // Don't rotate if cursor isn't active
   if (!IsCursorHidden()) { return Vector3Zero(); }
 
+  const RaycastResult playerRaycast =
+    Raycast(playerCamera.position, CameraForward(playerCamera), 20.0f);
+
+  // Todo, this should probably(definitely) not be here
+  if (IsMouseButtonPressed(PLAYER_BREAK) && playerRaycast.hit)
+  {
+    BreakVoxel(playerRaycast.hitPos);
+  }
+  if (IsMouseButtonPressed(PLAYER_PLACE) && playerRaycast.hit)
+  {
+    PlaceVoxel(Vector3Add(playerRaycast.hitPos, playerRaycast.normal), STONE);
+  }
   const Vector2 mouseMovement = GetMouseDelta();
 
   return (Vector3){mouseMovement.x * MOUSE_SENSITIVITY * deltaTime,

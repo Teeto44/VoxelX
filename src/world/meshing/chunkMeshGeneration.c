@@ -23,6 +23,7 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
+#include "chunkMeshGeneration.h"
 #include "chunkMap.h"
 #include "darray.h"
 #include "dataTypes.h"
@@ -44,15 +45,14 @@ static VoxelType GetVoxelFromNeighboringChunk(const Chunk* chunk,
 void GenerateChunkMesh(Chunk* chunk)
 {
   // Make sure we were given a real chunk
-  if (chunk == NULL) return;
+  if (chunk == NULL)
+  {
+    TraceLog(LOG_ERROR, "Mesh generation received non-existent chunk");
+    return;
+  }
 
   // Ensures that previous mesh is unloaded
-  if (chunk->mesh)
-  {
-    UnloadMesh(*chunk->mesh);
-    free(chunk->mesh);
-    chunk->mesh = NULL;
-  }
+  if (chunk->model.meshCount > 0) { REMOVE_CHUNK_MODEL(chunk); }
 
   DArray* vertices = DArrayCreate(sizeof(Vector3I));
   DArray* colors = DArrayCreate(sizeof(Color));
@@ -61,12 +61,17 @@ void GenerateChunkMesh(Chunk* chunk)
 
   if (DArraySize(vertices) == 0) goto SKIPMESHGEN;
 
+  DArrayShrinkToFit(vertices);
+  DArrayShrinkToFit(colors);
+
   DArray* indices = DArrayCreate(sizeof(uint));
 
   for (size_t i = 0; i < DArraySize(vertices); i++)
   {
     DArrayPush(indices, &i);
   }
+
+  DArrayShrinkToFit(indices);
 
   Mesh mesh = {0};
   mesh.vertexCount = (int)DArraySize(vertices);
@@ -105,10 +110,8 @@ void GenerateChunkMesh(Chunk* chunk)
     mesh.colors[i * 4 + 3] = color.a;
   }
 
-  UploadMesh(&mesh, true);
-  chunk->mesh = (Mesh*)malloc(sizeof(Mesh));
-  *chunk->mesh = mesh;
-  chunk->model = LoadModelFromMesh(*chunk->mesh);
+  UploadMesh(&mesh, false);
+  chunk->model = LoadModelFromMesh(mesh);
 
   DArrayFree(indices);
 
@@ -164,8 +167,6 @@ static bool IsFaceExposed(const Chunk* chunk, const Vector3I voxelPosition,
     case BACK: neighborPosZ--; break;
   }
 
-  if (neighborPosY < 0 || neighborPosY >= CHUNK_SIZE) return true;
-
   // Check if the neighbor position is within the current chunk
   if (neighborPosX >= 0 && neighborPosX < CHUNK_SIZE && neighborPosY >= 0 &&
       neighborPosY < CHUNK_SIZE && neighborPosZ >= 0 &&
@@ -195,17 +196,47 @@ static void AddFaceToMesh(DArray* vertices, DArray* colors,
                                         {0, 0, 1}, {1, 1, 1}, {0, 1, 1}};
   static const Vector3I backFace[6] = {{0, 0, 0}, {0, 1, 0}, {1, 1, 0},
                                        {0, 0, 0}, {1, 1, 0}, {1, 0, 0}};
-
   const Vector3I* faceVertices;
+  Color shadedColor = color;
   switch (face)
   {
-    case TOP: faceVertices = topFace; break;
-    case BOTTOM: faceVertices = bottomFace; break;
-    case LEFT: faceVertices = leftFace; break;
-    case RIGHT: faceVertices = rightFace; break;
-    case FRONT: faceVertices = frontFace; break;
-    case BACK: faceVertices = backFace; break;
-    default: faceVertices = frontFace; break;
+    case TOP:
+      faceVertices = topFace;
+      shadedColor = (Color){(unsigned char)((float)color.r * 1.0f),
+                            (unsigned char)((float)color.g * 1.0f),
+                            (unsigned char)((float)color.b * 1.0f), color.a};
+      break;
+    case BOTTOM:
+      faceVertices = bottomFace;
+      shadedColor = (Color){(unsigned char)((float)color.r * 0.5f),
+                            (unsigned char)((float)color.g * 0.5f),
+                            (unsigned char)((float)color.b * 0.5f), color.a};
+      break;
+    case LEFT:
+      faceVertices = leftFace;
+      shadedColor = (Color){(unsigned char)((float)color.r * 0.75f),
+                            (unsigned char)((float)color.g * 0.7f),
+                            (unsigned char)((float)color.b * 0.7f), color.a};
+      break;
+    case RIGHT:
+      faceVertices = rightFace;
+      shadedColor = (Color){(unsigned char)((float)color.r * 0.75f),
+                            (unsigned char)((float)color.g * 0.75f),
+                            (unsigned char)((float)color.b * 0.75f), color.a};
+      break;
+    case FRONT:
+      faceVertices = frontFace;
+      shadedColor = (Color){(unsigned char)((float)color.r * 0.75f),
+                            (unsigned char)((float)color.g * 0.75f),
+                            (unsigned char)((float)color.b * 0.75f), color.a};
+      break;
+    case BACK:
+      faceVertices = backFace;
+      shadedColor = (Color){(unsigned char)((float)color.r * 0.75f),
+                            (unsigned char)((float)color.g * 0.75f),
+                            (unsigned char)((float)color.b * 0.75f), color.a};
+      break;
+    default: faceVertices = topFace; break;
   }
 
   for (int i = 0; i < 6; i++)
@@ -214,7 +245,7 @@ static void AddFaceToMesh(DArray* vertices, DArray* colors,
                        voxelPosition.y + faceVertices[i].y,
                        voxelPosition.z + faceVertices[i].z};
     DArrayPush(vertices, &vertex);
-    DArrayPush(colors, &color);
+    DArrayPush(colors, &shadedColor);
   }
 }
 
@@ -233,9 +264,14 @@ static Color GetVoxelColor(const VoxelType type)
 static VoxelType GetVoxelFromNeighboringChunk(const Chunk* chunk,
                                               Vector3I neighborPosition)
 {
-  if (loadedChunks == NULL) return AIR;
+  if (loadedChunks == NULL)
+  {
+    TraceLog(LOG_ERROR, "Mesh generation cannot access chunks");
+    return AIR;
+  }
 
   int chunkX = chunk->position.x;
+  int chunkY = chunk->position.y;
   int chunkZ = chunk->position.z;
 
   if (neighborPosition.x < 0)
@@ -249,6 +285,17 @@ static VoxelType GetVoxelFromNeighboringChunk(const Chunk* chunk,
     neighborPosition.x -= CHUNK_SIZE;
   }
 
+  if (neighborPosition.y < 0)
+  {
+    chunkY--;
+    neighborPosition.y += CHUNK_SIZE;
+  }
+  else if (neighborPosition.y >= CHUNK_SIZE)
+  {
+    chunkY++;
+    neighborPosition.y -= CHUNK_SIZE;
+  }
+
   if (neighborPosition.z < 0)
   {
     chunkZ--;
@@ -260,13 +307,10 @@ static VoxelType GetVoxelFromNeighboringChunk(const Chunk* chunk,
     neighborPosition.z -= CHUNK_SIZE;
   }
 
-  const Chunk* neighborChunk = GetChunkFromMap(chunkX, chunkZ);
-  if (neighborChunk)
-  {
-    return neighborChunk
-      ->voxels[neighborPosition.x][neighborPosition.y][neighborPosition.z]
-      .type;
-  }
+  const Chunk* neighborChunk = GetChunkFromMap(chunkX, chunkY, chunkZ);
+  if (neighborChunk == NULL) return AIR;
 
-  return AIR;
+  return neighborChunk
+    ->voxels[neighborPosition.x][neighborPosition.y][neighborPosition.z]
+    .type;
 }

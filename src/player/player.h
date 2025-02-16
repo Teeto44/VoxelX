@@ -26,7 +26,9 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include "dataTypes.h"
 #include "raylib.h"
+#include "raymath.h"
 
 void InitPlayer();
 void UpdatePlayer(float deltaTime);
@@ -34,5 +36,12 @@ void UpdatePlayer(float deltaTime);
 // Variable fetching
 Camera3D GetPlayerCamera();
 Vector3 GetPlayerPosition();
+Vector3I GetPlayerChunk();
+
+inline Vector3 CameraForward(const Camera3D camera)
+{
+  const Vector3 direction = Vector3Subtract(camera.target, camera.position);
+  return Vector3Normalize(direction);
+}
 
 #endif // PLAYER_H

@@ -33,20 +33,23 @@
 #define WINDOW_TITLE "VoxelX - In Development"
 
 // Player settings
-#define PLAYER_SPEEED (25)
+#define PLAYER_SPEEED (50)
 #define MOUSE_SENSITIVITY (50)
 #define PLAYER_FOV (90)
 
 // Player controls
-#define PLAYER_FORWARD (KEY_W)
-#define PLAYER_BACK (KEY_S)
-#define PLAYER_LEFT (KEY_A)
-#define PLAYER_RIGHT (KEY_D)
-#define PLAYER_UP (KEY_SPACE)
-#define PLAYER_DOWN (KEY_LEFT_SHIFT)
+#define FREE_MOUSE (KEY_F)                // Only works as a keyboard key
+#define PLAYER_FORWARD (KEY_W)            // Only works as a keyboard key
+#define PLAYER_BACK (KEY_S)               // Only works as a keyboard key
+#define PLAYER_LEFT (KEY_A)               // Only works as a keyboard key
+#define PLAYER_RIGHT (KEY_D)              // Only works as a keyboard key
+#define PLAYER_UP (KEY_SPACE)             // Only works as a keyboard key
+#define PLAYER_DOWN (KEY_LEFT_SHIFT)      // Only works as a keyboard key
+#define PLAYER_BREAK (MOUSE_BUTTON_LEFT)  // Only works as a mouse button
+#define PLAYER_PLACE (MOUSE_BUTTON_RIGHT) // Only works as a mouse button
 
 // World settings
-#define RENDER_DISTANCE (10)
 #define CHUNK_SIZE (16)
+#define DEFAULT_DRAW_DISTANCE (10)
 
 #endif // SETTINGS_H

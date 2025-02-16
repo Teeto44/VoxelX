@@ -35,5 +35,7 @@ void EndGui();
 void ToggleCursor();
 
 bool GetDrawWireFrame();
+bool GetDrawChunkBorders();
+int GetDrawDistance();
 
 #endif // GUI_H

@@ -25,6 +25,7 @@
 
 #include "worldGeneration.h"
 #include <math.h>
+#include <stddef.h>
 #include "dataTypes.h"
 #include "settings.h"
 
@@ -32,6 +33,12 @@ static float PerlinNoise2D(float x, float y);
 
 void GenerateChunk(Chunk* chunk)
 {
+  if (chunk == NULL)
+  {
+    TraceLog(LOG_ERROR, "World generation received non-existent chunk");
+    return;
+  }
+
   for (int x = 0; x < CHUNK_SIZE; x++)
   {
     for (int z = 0; z < CHUNK_SIZE; z++)
@@ -44,10 +51,20 @@ void GenerateChunk(Chunk* chunk)
 
       for (int y = 0; y < CHUNK_SIZE; y++)
       {
-        if (y < height - 1) { chunk->voxels[x][y][z].type = STONE; }
-        else if (y < height) { chunk->voxels[x][y][z].type = DIRT; }
-        else if (y == height) { chunk->voxels[x][y][z].type = GRASS; }
-        else { chunk->voxels[x][y][z].type = AIR; }
+        const int globalY = chunk->position.y * CHUNK_SIZE + y;
+        VoxelType voxelType = AIR;
+
+        if (globalY >= 0)
+        {
+          if (globalY < height - 1)
+            voxelType = STONE;
+          else if (globalY < height)
+            voxelType = DIRT;
+          else if (globalY == height)
+            voxelType = GRASS;
+        }
+
+        chunk->voxels[x][y][z].type = voxelType;
       }
     }
   }

@@ -26,9 +26,6 @@
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 
 #include "gui.h"
-
-#include <corecrt_math.h>
-
 #include "cimgui.h"
 #include "player.h"
 #include "raylib.h"
@@ -37,9 +34,13 @@
 #include "world.h"
 
 bool drawWireFrame = false;
+bool drawChunkBorders = false;
+int drawDistance = DEFAULT_DRAW_DISTANCE;
 
 // Variable Fetching
 bool GetDrawWireFrame() { return drawWireFrame; }
+bool GetDrawChunkBorders() { return drawChunkBorders; }
+int GetDrawDistance() { return drawDistance; }
 
 void InitGui()
 {
@@ -68,12 +69,18 @@ void DrawDebugGui()
          playerPosition.z);
 
   // Determine which chunk the player is in
-  const int playerChunkX = (int)floorf(GetPlayerPosition().x / CHUNK_SIZE);
-  const int playerChunkZ = (int)floorf(GetPlayerPosition().z / CHUNK_SIZE);
-  igText("Player Chunk Position %d, %d, %d", playerChunkX, 0, playerChunkZ);
+  const Vector3I playerChunk = GetPlayerChunk();
+  igText("Player Chunk Position %d, %d, %d", playerChunk.x, playerChunk.y,
+         playerChunk.z);
+
+  igSeparatorText("Game Options");
+  igTextWrapped(
+    "WARNING: The memory requirements for anything over 20 is ridiculous");
+  igInputInt("Draw Distance", &drawDistance, 1, 100, ImGuiInputTextFlags_None);
 
   igSeparatorText("Debug Options");
   igCheckbox("Wireframe", &drawWireFrame);
+  igCheckbox("Chunk Borders", &drawChunkBorders);
 
   if (igButton("Regenerate Chunks", (ImVec2){150, 20})) { DestroyWorld(); }
 
