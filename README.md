@@ -2,13 +2,41 @@
 
 A small voxel engine written in C.
 
+![img.png](screenshots/img.png)
+
+## Features
+
+Currently not much, simple block breaking and placing with infinite world 
+generation.
+Does feature infinite build height as well as infinite depth, however the world 
+does not currently generate to these extremes.
+
 ## Building
 
-The project uses CMake, which should make it easy to build on any platform. However, right now ImGui, cimgui, and rlImGui are all built into a single `.lib` file, which is exclusive to Windows systems. I do plan to include a Unix-compatible build of the libraries if this project continues. Until then, Unix isn't expressly supported, but if you wish, you are welcome to build the libraries yourself; it should work just fine.
+The project uses CMake, which should make it easy to build on any platform. 
+However, right now ImGui, cimgui, and rlImGui are all built into a single static
+library and the extent of my testing has been on Windows and WSL. Apple Silicon
+isn't supported because I have not built an arm64 version of the library.
+If you wish, you are welcome to build the 
+libraries yourself; it should work just fine.
+
+### Windows
+This is specific to your IDE, please refer to your IDE's CMake documentation
+for more information.
+
+### Linux & MacOS(intel)
+```
+mkdir build
+cd build
+cmake ..
+make
+./VoxelX
+```
 
 ## Dependencies
 
-All dependencies are either included in the project or will be downloaded when it builds.
+All dependencies are either included in the project or will be downloaded when 
+builds.
 
 Here are all the libraries used:
 
@@ -16,7 +44,7 @@ Here are all the libraries used:
 - [rlImGui](https://github.com/raylib-extras/rlImGui)
 - [cimgui](https://github.com/cimgui/cimgui)
 - [imgui](https://github.com/ocornut/imgui)
-- [tinycthread](https://github.com/tinycthread/tinycthread)
+- [tinycthread](https://github.com/tinycthread/tinycthread) - Unused for now
 
 ## License
 

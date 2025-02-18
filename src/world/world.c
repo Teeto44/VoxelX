@@ -34,70 +34,78 @@
 #include "worldGeneration.h"
 
 // Function prototypes
-static void DrawChunk(const Chunk* chunk);
 static void UpdateNeighboringChunkMeshes(int chunkX, int chunkY, int chunkZ);
+static void CheckAndFreeEmptyChunk(Chunk* chunk);
 
 Map* loadedChunks = NULL;
+
+// Helpers
+
+static void WorldToChunkCoords(const Vector3 pos, int* chunkX, int* chunkY,
+                               int* chunkZ)
+{
+  *chunkX = (int)floorf(pos.x / CHUNK_SIZE);
+  *chunkY = (int)floorf(pos.y / CHUNK_SIZE);
+  *chunkZ = (int)floorf(pos.z / CHUNK_SIZE);
+}
+
+static void WorldToLocalCoords(const Vector3 pos, int* localX, int* localY,
+                               int* localZ)
+{
+  *localX = ((int)floorf(pos.x) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
+  *localY = ((int)floorf(pos.y) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
+  *localZ = ((int)floorf(pos.z) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
+}
 
 // Function to place a block
 void PlaceVoxel(const Vector3 position, const VoxelType type)
 {
-  const int chunkX = (int)floorf(position.x / CHUNK_SIZE);
-  const int chunkY = (int)floorf(position.y / CHUNK_SIZE);
-  const int chunkZ = (int)floorf(position.z / CHUNK_SIZE);
-
+  int chunkX, chunkY, chunkZ;
+  WorldToChunkCoords(position, &chunkX, &chunkY, &chunkZ);
   Chunk* chunk = GetChunkFromMap(chunkX, chunkY, chunkZ);
-  if (chunk == NULL)
+  if (!chunk)
   {
-    TraceLog(LOG_ERROR, "Attempting to place voxel from non-existent chunk");
+    TraceLog(LOG_ERROR, "Attempting to place voxel in non-existent chunk");
     return;
   }
-  const int localX =
-    ((int)floorf(position.x) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
-  const int localY =
-    ((int)floorf(position.y) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
-  const int localZ =
-    ((int)floorf(position.z) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
 
-  chunk->voxels[localX][localY][localZ].type = type;
+  int localX, localY, localZ;
+  WorldToLocalCoords(position, &localX, &localY, &localZ);
+  if (!chunk->voxels)
+  {
+    chunk->voxels = calloc(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, sizeof(Voxel));
+    if (!chunk->voxels)
+    {
+      TraceLog(LOG_ERROR, "Failed to allocate voxel data for chunk");
+      return;
+    }
+  }
+  chunk->voxels[VOXEL_INDEX(localX, localY, localZ)] = (Voxel){type};
   chunk->needsMeshing = true;
+  // Mark neighbors as needing re-mesh in case their visible faces change
   UpdateNeighboringChunkMeshes(chunkX, chunkY, chunkZ);
 }
 
 // Function to break a voxel
-void BreakVoxel(const Vector3 position) { PlaceVoxel(position, AIR); }
+void BreakVoxel(const Vector3 position)
+{
+  PlaceVoxel(position, AIR);
+
+  int chunkX, chunkY, chunkZ;
+  WorldToChunkCoords(position, &chunkX, &chunkY, &chunkZ);
+  Chunk* chunk = GetChunkFromMap(chunkX, chunkY, chunkZ);
+  if (chunk) CheckAndFreeEmptyChunk(chunk);
+}
 
 Voxel GetVoxel(const Vector3 position)
 {
-  const int chunkX = (int)floorf(position.x / CHUNK_SIZE);
-  const int chunkY = (int)floorf(position.y / CHUNK_SIZE);
-  const int chunkZ = (int)floorf(position.z / CHUNK_SIZE);
-
+  int chunkX, chunkY, chunkZ;
+  WorldToChunkCoords(position, &chunkX, &chunkY, &chunkZ);
   const Chunk* chunk = GetChunkFromMap(chunkX, chunkY, chunkZ);
-  if (chunk == NULL || chunk->voxels == NULL)
-  {
-    TraceLog(
-      LOG_ERROR,
-      "Attempting to retrieve voxel from non-existent or uninitialized chunk");
-    return (Voxel){AIR};
-  }
-
-  const int localX =
-    ((int)floorf(position.x) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
-  const int localY =
-    ((int)floorf(position.y) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
-  const int localZ =
-    ((int)floorf(position.z) % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
-
-  if (localX < 0 || localX >= CHUNK_SIZE || localY < 0 ||
-      localY >= CHUNK_SIZE || localZ < 0 || localZ >= CHUNK_SIZE)
-  {
-    TraceLog(LOG_ERROR,
-             "Attempting to retrieve voxel from out-of-bounds position");
-    return (Voxel){AIR};
-  }
-
-  return chunk->voxels[localX][localY][localZ];
+  if (!chunk || !chunk->voxels) return (Voxel){AIR};
+  int localX, localY, localZ;
+  WorldToLocalCoords(position, &localX, &localY, &localZ);
+  return chunk->voxels[VOXEL_INDEX(localX, localY, localZ)];
 }
 
 // Completely destroys the currently loaded chunks
@@ -105,11 +113,17 @@ void DestroyWorld() { ClearChunkMap(); }
 
 Chunk* CreateChunk(const int chunkX, const int chunkY, const int chunkZ)
 {
-  Chunk* chunk = malloc(sizeof(Chunk));
+  Chunk* chunk = ChunkPoolAcquire();
+  if (!chunk)
+  {
+    TraceLog(LOG_ERROR, "ChunkPoolAcquire failed");
+    return NULL;
+  }
   chunk->position.x = chunkX;
   chunk->position.y = chunkY;
   chunk->position.z = chunkZ;
   chunk->needsMeshing = true;
+  chunk->voxels = NULL;
 
   GenerateChunk(chunk);
   UpdateNeighboringChunkMeshes(chunkX, chunkY, chunkZ);
@@ -117,11 +131,13 @@ Chunk* CreateChunk(const int chunkX, const int chunkY, const int chunkZ)
   return chunk;
 }
 
-void LoadChunksInRenderDistance()
+void LoadChunksInRenderDistance(void)
 {
   const Vector3I playerChunk = GetPlayerChunk();
   const int drawDistance = GetDrawDistance();
+  const int drawDistanceSq = drawDistance * drawDistance;
 
+  // Create any missing chunks in render radius
   for (int chunkX = playerChunk.x - drawDistance;
        chunkX <= playerChunk.x + drawDistance; chunkX++)
   {
@@ -131,41 +147,46 @@ void LoadChunksInRenderDistance()
       for (int chunkZ = playerChunk.z - drawDistance;
            chunkZ <= playerChunk.z + drawDistance; chunkZ++)
       {
-        const float distance = sqrtf(
-          (float)(chunkX - playerChunk.x) * (float)(chunkX - playerChunk.x) +
-          (float)(chunkY - playerChunk.y) * (float)(chunkY - playerChunk.y) +
-          (float)(chunkZ - playerChunk.z) * (float)(chunkZ - playerChunk.z));
-        if (distance <= (float)drawDistance)
+        const int distanceX = chunkX - playerChunk.x;
+        const int distanceY = chunkY - playerChunk.y;
+        const int distanceZ = chunkZ - playerChunk.z;
+        const int distanceSq =
+          distanceX * distanceX + distanceY * distanceY + distanceZ * distanceZ;
+        if (distanceSq <= drawDistanceSq)
         {
           if (!GetChunkFromMap(chunkX, chunkY, chunkZ))
           {
             Chunk* newChunk = CreateChunk(chunkX, chunkY, chunkZ);
-            AddChunkToMap(chunkX, chunkY, chunkZ, newChunk);
+            if (newChunk) AddChunkToMap(chunkX, chunkY, chunkZ, newChunk);
           }
         }
       }
     }
   }
 
+  // Determine which chunks should be removed or re-meshed
   DArray* chunksToRemove = DArrayCreate(sizeof(ChunkKey));
+  if (!chunksToRemove)
+  {
+    TraceLog(LOG_ERROR, "Failed to create dynamic array for chunk removal");
+    return;
+  }
 
   MapIterator it = MapIteratorCreate(loadedChunks);
   ChunkKey key;
   Chunk* chunk;
   while (MapIteratorNext(&it, &key, &chunk))
   {
-    const float distance = sqrtf((float)pow(key.chunkX - playerChunk.x, 2) +
-                                 (float)pow(key.chunkY - playerChunk.y, 2) +
-                                 (float)pow(key.chunkZ - playerChunk.z, 2));
-    if (distance > (float)drawDistance) { DArrayPush(chunksToRemove, &key); }
-    else if (chunk->needsMeshing)
-    {
-      GenerateChunkMesh(chunk);
-      chunk->needsMeshing = false;
-    }
+    const int distanceX = key.chunkX - playerChunk.x;
+    const int distanceY = key.chunkY - playerChunk.y;
+    const int distanceZ = key.chunkZ - playerChunk.z;
+    const int distanceSq =
+      distanceX * distanceX + distanceY * distanceY + distanceZ * distanceZ;
+    if (distanceSq > drawDistanceSq) { DArrayPush(chunksToRemove, &key); }
+    else if (chunk->needsMeshing) { GenerateChunkMesh(chunk); }
   }
 
-  // Remove chunks after iteration is complete
+  // Remove out-of-range chunks
   for (size_t i = 0; i < DArraySize(chunksToRemove); i++)
   {
     ChunkKey removeKey;
@@ -176,42 +197,30 @@ void LoadChunksInRenderDistance()
 }
 
 // Draws all the currently loaded chunks
-void DrawChunks()
+void DrawChunks(void)
 {
   MapIterator it = MapIteratorCreate(loadedChunks);
   ChunkKey key;
   Chunk* chunk;
-
   while (MapIteratorNext(&it, &key, &chunk))
   {
-    DrawChunk(chunk);
-  }
-}
-
-// Draws a specific chunk
-static void DrawChunk(const Chunk* chunk)
-{
-  // Why check if it is less than 0? Because for some reason models instantiate
-  // with -842150451 meshes. Explain that to me.
-  if (chunk->model.meshCount <= 0) { return; }
-
-  const Vector3 chunkPosition = {(float)chunk->position.x * CHUNK_SIZE,
-                                 (float)chunk->position.y * CHUNK_SIZE,
-                                 (float)chunk->position.z * CHUNK_SIZE};
-
-  if (GetDrawWireFrame())
-  {
-    DrawModelWires(chunk->model, chunkPosition, 1.0f, WHITE);
-  }
-  else { DrawModel(chunk->model, chunkPosition, 1.0f, WHITE); }
-
-  if (GetDrawChunkBorders())
-  {
-    const BoundingBox chunkBounds = {
-      .min = chunkPosition,
-      .max = Vector3Add(chunkPosition,
-                        (Vector3){CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE})};
-    DrawBoundingBox(chunkBounds, RED);
+    if (chunk && chunk->model.meshCount > 0)
+    {
+      const Vector3 chunkPos = {(float)chunk->position.x * CHUNK_SIZE,
+                                (float)chunk->position.y * CHUNK_SIZE,
+                                (float)chunk->position.z * CHUNK_SIZE};
+      if (GetDrawWireFrame())
+        DrawModelWires(chunk->model, chunkPos, 1.0f, WHITE);
+      else
+        DrawModel(chunk->model, chunkPos, 1.0f, WHITE);
+      if (GetDrawChunkBorders())
+      {
+        const BoundingBox bounds = {
+          chunkPos,
+          Vector3Add(chunkPos, (Vector3){CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE})};
+        DrawBoundingBox(bounds, RED);
+      }
+    }
   }
 }
 
@@ -229,4 +238,21 @@ static void UpdateNeighboringChunkMeshes(const int chunkX, const int chunkY,
     Chunk* neighborChunk = GetChunkFromMap(neighborX, neighborY, neighborZ);
     if (neighborChunk) { neighborChunk->needsMeshing = true; }
   }
+}
+
+static void CheckAndFreeEmptyChunk(Chunk* chunk)
+{
+  if (!chunk->voxels) return;
+
+  const size_t totalVoxels = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+  for (size_t i = 0; i < totalVoxels; i++)
+  {
+    if (chunk->voxels[i].type != AIR) return;
+  }
+
+  if (chunk->model.meshCount > 0) { REMOVE_CHUNK_MODEL(chunk); }
+  TraceLog(LOG_INFO, "Freeing empty chunk at (%d, %d, %d)", chunk->position.x,
+           chunk->position.y, chunk->position.z);
+  free(chunk->voxels);
+  chunk->voxels = NULL;
 }

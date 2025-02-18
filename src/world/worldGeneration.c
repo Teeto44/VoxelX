@@ -25,7 +25,7 @@
 
 #include "worldGeneration.h"
 #include <math.h>
-#include <stddef.h>
+#include <stdlib.h>
 #include "dataTypes.h"
 #include "settings.h"
 
@@ -39,11 +39,22 @@ void GenerateChunk(Chunk* chunk)
     return;
   }
 
+  // Allocate a temporary buffer for voxel data.
+  const size_t totalVoxels = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+  Voxel* tempVoxels = calloc(totalVoxels, sizeof(Voxel));
+  if (!tempVoxels)
+  {
+    TraceLog(LOG_ERROR, "Failed to allocate temporary voxel buffer for chunk");
+    return;
+  }
+
+  bool nonAirFound = false;
+
   for (int x = 0; x < CHUNK_SIZE; x++)
   {
     for (int z = 0; z < CHUNK_SIZE; z++)
     {
-      // Use Perlin noise to generate a smooth height map
+      // Use Perlin noise to generate a smooth height map.
       const float noise =
         PerlinNoise2D((float)(chunk->position.x * CHUNK_SIZE + x) * 0.1f,
                       (float)(chunk->position.z * CHUNK_SIZE + z) * 0.1f);
@@ -64,15 +75,23 @@ void GenerateChunk(Chunk* chunk)
             voxelType = GRASS;
         }
 
-        chunk->voxels[x][y][z].type = voxelType;
+        tempVoxels[VOXEL_INDEX(x, y, z)].type = voxelType;
+        if (voxelType != AIR) nonAirFound = true;
       }
     }
   }
+
+  // If any non-air voxel exists, move the temporary buffer into the chunk.
+  // Otherwise, free the buffer and leave chunk->voxels as NULL.
+  if (nonAirFound)
+    chunk->voxels = tempVoxels;
+  else
+  {
+    free(tempVoxels);
+    chunk->voxels = NULL;
+  }
 }
 
-// Temporarily generates smooth curves for the surface of the world.
-// This will be replaced with a more complex world generation algorithm,
-// but I think this is good enough for now.
 static float PerlinNoise2D(const float x, const float y)
 {
   return (sinf(x) + cosf(y)) * 0.5f;

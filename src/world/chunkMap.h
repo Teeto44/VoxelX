@@ -26,6 +26,7 @@
 #ifndef CHUNK_MAP_H
 #define CHUNK_MAP_H
 
+#include "chunkPool.h"
 #include "dataTypes.h"
 #include "map.h"
 
@@ -47,10 +48,11 @@ static size_t ChunkKeyHash(const void* key)
 
 static bool ChunkKeyCompare(const void* key1, const void* key2)
 {
-  const ChunkKey* ck1 = key1;
-  const ChunkKey* ck2 = key2;
-  return ck1->chunkX == ck2->chunkX && ck1->chunkY == ck2->chunkY &&
-         ck1->chunkZ == ck2->chunkZ;
+  const ChunkKey* chunkKey = key1;
+  const ChunkKey* chunkKey2 = key2;
+  return chunkKey->chunkX == chunkKey2->chunkX &&
+         chunkKey->chunkY == chunkKey2->chunkY &&
+         chunkKey->chunkZ == chunkKey2->chunkZ;
 }
 
 // Global map instance for storing chunks
@@ -63,20 +65,20 @@ static void InitializeChunkMap()
     MapCreate(sizeof(ChunkKey), sizeof(Chunk*), ChunkKeyHash, ChunkKeyCompare);
 }
 
-inline void AddChunkToMap(const int chunkX, const int chunkY, const int chunkZ,
+static void AddChunkToMap(const int chunkX, const int chunkY, const int chunkZ,
                           Chunk* chunk)
 {
-  if (chunk == NULL)
+  if (!chunk)
   {
     TraceLog(LOG_ERROR, "Attempting to add non-existent chunk to chunk map");
     return;
   }
   if (!loadedChunks) InitializeChunkMap();
-  const ChunkKey key = {.chunkX = chunkX, .chunkY = chunkY, .chunkZ = chunkZ};
+  const ChunkKey key = {chunkX, chunkY, chunkZ};
   MapPut(loadedChunks, &key, &chunk);
 }
 
-inline Chunk* GetChunkFromMap(const int chunkX, const int chunkY,
+static Chunk* GetChunkFromMap(const int chunkX, const int chunkY,
                               const int chunkZ)
 {
   if (!loadedChunks)
@@ -86,13 +88,12 @@ inline Chunk* GetChunkFromMap(const int chunkX, const int chunkY,
              "flagged after the first few frames, it is an issue");
     return NULL;
   }
-  const ChunkKey key = {.chunkX = chunkX, .chunkY = chunkY, .chunkZ = chunkZ};
-  Chunk* output = NULL;
-  if (MapGet(loadedChunks, &key, &output)) return output;
-  return NULL;
+  const ChunkKey key = {chunkX, chunkY, chunkZ};
+  Chunk* chunk = NULL;
+  return MapGet(loadedChunks, &key, &chunk) ? chunk : NULL;
 }
 
-inline void RemoveChunkFromMap(const int chunkX, const int chunkY,
+static void RemoveChunkFromMap(const int chunkX, const int chunkY,
                                const int chunkZ)
 {
   if (!loadedChunks)
@@ -100,18 +101,18 @@ inline void RemoveChunkFromMap(const int chunkX, const int chunkY,
     TraceLog(LOG_ERROR, "Attempting to remove chunk from uninitialized map");
     return;
   }
-  const ChunkKey key = {.chunkX = chunkX, .chunkY = chunkY, .chunkZ = chunkZ};
+  const ChunkKey key = {chunkX, chunkY, chunkZ};
   Chunk* chunk = NULL;
   if (MapGet(loadedChunks, &key, &chunk))
   {
     if (chunk->model.meshCount > 0) { REMOVE_CHUNK_MODEL(chunk) }
-    free(chunk);
+    ChunkPoolRelease(chunk);
     MapRemove(loadedChunks, &key);
   }
 }
 
 // Clears the chunk map
-inline void ClearChunkMap()
+static void ClearChunkMap()
 {
   if (!loadedChunks)
   {
@@ -126,7 +127,7 @@ inline void ClearChunkMap()
   while (MapIteratorNext(&it, &key, &chunk))
   {
     if (chunk->model.meshCount > 0) { REMOVE_CHUNK_MODEL(chunk); }
-    free(chunk);
+    ChunkPoolRelease(chunk);
   }
 
   MapFree(loadedChunks);

@@ -6,11 +6,14 @@ set(RAYLIB_VERSION 5.5)
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
 # Adding CRLImGui (rLImGui + Cimgui + Imgui) -- Please read README.txt in the external/crlimgui folder
-set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.lib")
+if (WIN32)
+		set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.lib")
+else ()
+		set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.a")
+endif ()
 set(CRLIMGUI_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/crlimgui/include")
 
 set(TINYCTHREAD_SOURCE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/library")
-set(TINYCTHREAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/include")
 set(TINYCTHREAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/tinycthread/include")
 
 # Set C standard
@@ -42,13 +45,13 @@ endif ()
 function(collect_subdirectories BASE_DIR RESULT)
 		file(GLOB CHILDREN RELATIVE ${BASE_DIR} ${BASE_DIR}/*)
 		set(DIRS "")
-		foreach(CHILD ${CHILDREN})
-				if(IS_DIRECTORY ${BASE_DIR}/${CHILD})
+		foreach (CHILD ${CHILDREN})
+				if (IS_DIRECTORY ${BASE_DIR}/${CHILD})
 						list(APPEND DIRS ${BASE_DIR}/${CHILD})
 						collect_subdirectories(${BASE_DIR}/${CHILD} SUBDIRS)
 						list(APPEND DIRS ${SUBDIRS})
-				endif()
-		endforeach()
+				endif ()
+		endforeach ()
 		set(${RESULT} ${DIRS} PARENT_SCOPE)
 endfunction()
 
@@ -65,9 +68,14 @@ collect_subdirectories(${SRC_DIR} SUBDIRS)
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib ${CRLIMGUI_LIB})
 
+if (UNIX)
+		target_link_libraries(${PROJECT_NAME} PRIVATE stdc++)
+endif ()
+
 target_include_directories(${PROJECT_NAME} PRIVATE ${CRLIMGUI_INCLUDE_DIR}
 													 ${TINYCTHREAD_INCLUDE_DIR} ${SRC_DIR} ${SUBDIRS})
 
 # Setting ASSETS_PATH
 target_compile_definitions(${PROJECT_NAME} PUBLIC RES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/res/")
-#target_compile_definitions(${PROJECT_NAME} PUBLIC RES_PATH="./res") -- This is to be used when building for release
+# Release version
+#target_compile_definitions(${PROJECT_NAME} PUBLIC RES_PATH="./res")

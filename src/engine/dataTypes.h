@@ -28,8 +28,8 @@
 
 #include <stdbool.h>
 #include "raylib.h"
-#include <stddef.h>
 #include "settings.h"
+#include "stddef.h" // This isn't required on windows but linux requires it :/
 
 #define uint uint32_t
 #define ushort uint16_t
@@ -44,20 +44,20 @@ typedef struct Vector3I
 
 typedef enum VoxelType
 {
-  AIR,
-  DIRT,
-  GRASS,
-  STONE,
+  AIR = 0,
+  DIRT = 1,
+  GRASS = 2,
+  STONE = 3,
 } VoxelType;
 
 typedef enum Face
 {
-  TOP,
-  BOTTOM,
-  LEFT,
-  RIGHT,
-  FRONT,
-  BACK,
+  TOP = 0,
+  BOTTOM = 1,
+  LEFT = 2,
+  RIGHT = 3,
+  FRONT = 4,
+  BACK = 5,
 } Face;
 
 typedef struct Voxel
@@ -65,13 +65,23 @@ typedef struct Voxel
   VoxelType type;
 } Voxel;
 
+// Forward declaration of Chunk
+struct ChunkPoolBlock;
+
 typedef struct Chunk
 {
-  Vector3I position;
-  Voxel voxels[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+  struct ChunkPoolBlock* block;
+  union
+  {
+    Vector3I position;
+    struct Chunk* nextFree; // for pool management
+  };
+  Voxel* voxels;
   bool needsMeshing;
   Model model;
 } Chunk;
+
+#define VOXEL_INDEX(x, y, z) ((x) + CHUNK_SIZE * ((y) + CHUNK_SIZE * (z)))
 
 // Smaller ways to refer to the hashing functions
 #define MHVI MapHashVector3I

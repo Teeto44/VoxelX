@@ -38,7 +38,7 @@ Camera3D GetPlayerCamera();
 Vector3 GetPlayerPosition();
 Vector3I GetPlayerChunk();
 
-inline Vector3 CameraForward(const Camera3D camera)
+static Vector3 CameraForward(const Camera3D camera)
 {
   const Vector3 direction = Vector3Subtract(camera.target, camera.position);
   return Vector3Normalize(direction);
