@@ -26,21 +26,22 @@
 #include "world.h"
 #include <stdlib.h>
 #include "chunkMap.h"
-#include "chunkMeshGeneration.h"
 #include "darray.h"
 #include "gui.h"
 #include "player.h"
 #include "settings.h"
-#include "worldGeneration.h"
+#include "threadPool.h"
+#include "voxelTasks.h"
 
 // Function prototypes
 static void UpdateNeighboringChunkMeshes(int chunkX, int chunkY, int chunkZ);
 static void CheckAndFreeEmptyChunk(Chunk* chunk);
 
 Map* loadedChunks = NULL;
+mtx_t loadedChunksMutex;
+extern ThreadPool threadPool;
 
 // Helpers
-
 static void WorldToChunkCoords(const Vector3 pos, int* chunkX, int* chunkY,
                                int* chunkZ)
 {
@@ -125,7 +126,7 @@ Chunk* CreateChunk(const int chunkX, const int chunkY, const int chunkZ)
   chunk->needsMeshing = true;
   chunk->voxels = NULL;
 
-  GenerateChunk(chunk);
+  ThreadPoolSubmit(&threadPool, ChunkGenerationTask, chunk);
   UpdateNeighboringChunkMeshes(chunkX, chunkY, chunkZ);
 
   return chunk;
@@ -183,7 +184,11 @@ void LoadChunksInRenderDistance(void)
     const int distanceSq =
       distanceX * distanceX + distanceY * distanceY + distanceZ * distanceZ;
     if (distanceSq > drawDistanceSq) { DArrayPush(chunksToRemove, &key); }
-    else if (chunk->needsMeshing) { GenerateChunkMesh(chunk); }
+    else if (chunk->needsMeshing && chunk->voxels != NULL)
+    {
+      chunk->needsMeshing = false;
+      ThreadPoolSubmit(&threadPool, ComputeMeshTask, chunk);
+    }
   }
 
   // Remove out-of-range chunks
@@ -250,7 +255,7 @@ static void CheckAndFreeEmptyChunk(Chunk* chunk)
     if (chunk->voxels[i].type != AIR) return;
   }
 
-  if (chunk->model.meshCount > 0) { REMOVE_CHUNK_MODEL(chunk); }
+  if (chunk->model.meshCount > 0) { RemoveChunkModel(chunk); }
   TraceLog(LOG_INFO, "Freeing empty chunk at (%d, %d, %d)", chunk->position.x,
            chunk->position.y, chunk->position.z);
   free(chunk->voxels);

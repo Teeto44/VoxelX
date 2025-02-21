@@ -65,7 +65,6 @@ typedef struct Voxel
   VoxelType type;
 } Voxel;
 
-// Forward declaration of Chunk
 struct ChunkPoolBlock;
 
 typedef struct Chunk
@@ -106,10 +105,10 @@ static bool MapCompareVector3I(const void* key1, const void* key2)
   return vec1->x == vec2->x && vec1->y == vec2->y && vec1->z == vec2->z;
 }
 
-#define REMOVE_CHUNK_MODEL(chunk)                                              \
-  {                                                                            \
-    UnloadModel((chunk)->model);                                               \
-    (chunk)->model.meshCount = 0;                                              \
-  }
+static void RemoveChunkModel(Chunk* chunk)
+{
+  UnloadModel(chunk->model);
+  chunk->model.meshCount = 0;
+}
 
 #endif // DATA_TYPES_H

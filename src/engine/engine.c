@@ -24,10 +24,13 @@
 *******************************************************************************/
 
 #include "engine.h"
+#include "chunkMap.h"
 #include "gui.h"
+#include "mainThreadJobQueue.h"
 #include "player.h"
 #include "raylib.h"
 #include "settings.h"
+#include "threadPool.h"
 #include "world.h"
 
 // Function prototypes
@@ -35,22 +38,29 @@ static void Draw();
 static void Draw3D();
 static void Draw2D();
 
+ThreadPool threadPool;
+
 // Initialize the engine
 void Initialize()
 {
   // Initialize window
-  SetTraceLogLevel(LOG_ERROR);
+  SetTraceLogLevel(LOG_INFO);
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetTargetFPS(TARGET_FPS);
   DisableCursor();
 
+  ThreadPoolInit(&threadPool, 6);
+  mtx_init(&loadedChunksMutex, mtx_plain);
+  InitializeChunkMap();
+  MainThreadJobQueueInit();
   InitGui();
   InitPlayer();
 }
 
 void Update()
 {
+  ProcessMainThreadJobs();
   // Update world
   LoadChunksInRenderDistance();
   UpdatePlayer(GetFrameTime());
@@ -69,6 +79,8 @@ void Deconstruct()
 
   // Cleaning up window
   CloseWindow();
+  ThreadPoolShutdown(&threadPool);
+  MainThreadJobQueueShutdown();
 }
 
 // Draw the frame

@@ -41,8 +41,8 @@ void GenerateChunk(Chunk* chunk)
 
   // Allocate a temporary buffer for voxel data.
   const size_t totalVoxels = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-  Voxel* tempVoxels = calloc(totalVoxels, sizeof(Voxel));
-  if (!tempVoxels)
+  Voxel* voxelBuffer = calloc(totalVoxels, sizeof(Voxel));
+  if (!voxelBuffer)
   {
     TraceLog(LOG_ERROR, "Failed to allocate temporary voxel buffer for chunk");
     return;
@@ -75,7 +75,7 @@ void GenerateChunk(Chunk* chunk)
             voxelType = GRASS;
         }
 
-        tempVoxels[VOXEL_INDEX(x, y, z)].type = voxelType;
+        voxelBuffer[VOXEL_INDEX(x, y, z)].type = voxelType;
         if (voxelType != AIR) nonAirFound = true;
       }
     }
@@ -84,10 +84,10 @@ void GenerateChunk(Chunk* chunk)
   // If any non-air voxel exists, move the temporary buffer into the chunk.
   // Otherwise, free the buffer and leave chunk->voxels as NULL.
   if (nonAirFound)
-    chunk->voxels = tempVoxels;
+    chunk->voxels = voxelBuffer;
   else
   {
-    free(tempVoxels);
+    free(voxelBuffer);
     chunk->voxels = NULL;
   }
 }

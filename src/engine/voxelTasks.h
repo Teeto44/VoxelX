@@ -23,11 +23,22 @@
 * THE SOFTWARE.
 *******************************************************************************/
 
-#ifndef CHUNK_MESH_GENERATION_H
-#define CHUNK_MESH_GENERATION_H
+#ifndef VOXEL_TASKS_H
+#define VOXEL_TASKS_H
 
 #include "dataTypes.h"
+#include "mainThreadJobQueue.h"
+#include "meshGenerationHelpers.h" // For Vertex
 
-void GenerateChunkMesh(Chunk* chunk);
+void ChunkGenerationTask(void* arg);
+void ComputeMeshTask(void* arg);
 
-#endif // CHUNK_MESH_GENERATION_H
+typedef struct MeshJob
+{
+  MainThreadJob base;
+  Chunk* chunk;
+  Vertex* vertices;
+  int vertexCount;
+} MeshJob;
+
+#endif // VOXEL_TASKS_H

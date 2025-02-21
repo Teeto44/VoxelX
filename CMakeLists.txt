@@ -7,11 +7,11 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
 # Adding CRLImGui (rLImGui + Cimgui + Imgui) -- Please read README.txt in the external/crlimgui folder
 if (WIN32)
-  set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.lib")
+		set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.lib")
 elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "arm" OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimguiARM.a")
+		set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimguiARM.a")
 else ()
-  set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.a")
+		set(CRLIMGUI_LIB "${CMAKE_SOURCE_DIR}/external/crlimgui/library/crlimgui.a")
 endif ()
 set(CRLIMGUI_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/crlimgui/include")
 
@@ -58,11 +58,11 @@ function(collect_subdirectories BASE_DIR RESULT)
 endfunction()
 
 # Use file(GLOB_RECURSE ...) to get all .c, .cpp, .h, and .hpp files in the src directory
-file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp")
+file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp" "${TINYCTHREAD_SOURCE_DIR}/*.c") # Tinycthread needs to be built with the project
 file(GLOB_RECURSE HEADERS "${SRC_DIR}/*.h" "${SRC_DIR}/*.hpp")
 
 # Add the executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${TINYCTHREAD_SOURCE_DIR}) # Tinycthread needs to be built with the project
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 # find all subdirectories in src/
 collect_subdirectories(${SRC_DIR} SUBDIRS)
